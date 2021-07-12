@@ -1,0 +1,11 @@
+LIB CONNECT TO 'MongoDB_localhost';
+
+LOAD [Ramo de Atividade], 
+	[Divisões], 
+	[(DIVISÃO - 2digitos CNAE)];
+
+[Setores e Ramos de Atividade]:
+SELECT [Ramo de Atividade],
+	[Divisões],
+	[(DIVISÃO - 2digitos CNAE)]
+FROM SETDB.[Setores e Ramos de Atividade];

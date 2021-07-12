@@ -1,0 +1,25 @@
+LOAD
+    cd_cnpj,
+    SubField(nu_ordem,'~@~') as ordem,
+    cd_ramo_atividade,
+    de_ramo_atividade
+FROM [lib://dataMirrors/CNAE.QVD]
+(qvd);
+
+
+[CNAE_temp]:
+LOAD
+	[cd_cnpj],
+	[ordem],
+	//[cd_ramo_atividade],
+    SubField(cd_ramo_atividade,'~@~', [ordem]+1) as cod_ramo_atividade,
+	//[de_ramo_atividade],
+    SubField(de_ramo_atividade,'~@~', [ordem]+1) as desc_ramo_atividade
+	
+    
+RESIDENT [CNAE];
+DROP TABLE [CNAE];
+
+
+
+RENAME TABLE [CNAE_temp] to [CNAE];

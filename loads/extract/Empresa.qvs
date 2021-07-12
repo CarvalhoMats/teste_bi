@@ -1,0 +1,31 @@
+LIB CONNECT TO 'EMPDB';
+
+REM LOAD "cd_cnpj",
+    "fl_matriz",
+    "dt_abertura",
+    "nm_razao_social",
+    "cd_natureza_juridica",
+    "de_natureza_juridica",
+    "nm_logradouro",
+    "nu_logradouro",
+    "cd_cep",
+    "nm_bairro",
+    "nm_municipio",
+    "sg_uf",
+    "de_situacao",
+    "de_classif_natureza_juridica";
+SQL SELECT "cd_cnpj",
+    "fl_matriz",
+    "dt_abertura",
+    "nm_razao_social",
+    "cd_natureza_juridica",
+    "de_natureza_juridica",
+    "nm_logradouro",
+    "nu_logradouro",
+    "cd_cep",
+    "nm_bairro",
+    "nm_municipio",
+    "sg_uf",
+    "de_situacao",
+    "de_classif_natureza_juridica"
+FROM "C:\Users\Matheus\Documents\GitHub\teste_bi\files\spreadsheets\EMPDB.accdb".Empresa;

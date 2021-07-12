@@ -1,0 +1,304 @@
+SET ThousandSep='.';
+SET DecimalSep=',';
+SET MoneyThousandSep='.';
+SET MoneyDecimalSep=',';
+SET MoneyFormat='R$#.##0,00;-R$#.##0,00';
+SET TimeFormat='hh:mm:ss';
+SET DateFormat='DD/MM/YYYY';
+SET TimestampFormat='DD/MM/YYYY hh:mm:ss[.fff]';
+SET FirstWeekDay=6;
+SET BrokenWeeks=1;
+SET ReferenceDay=0;
+SET FirstMonthOfYear=1;
+SET CollationLocale='pt-BR';
+SET CreateSearchIndexOnReload=1;
+SET MonthNames='jan;fev;mar;abr;mai;jun;jul;ago;set;out;nov;dez';
+SET LongMonthNames='janeiro;fevereiro;março;abril;maio;junho;julho;agosto;setembro;outubro;novembro;dezembro';
+SET DayNames='seg;ter;qua;qui;sex;sáb;dom';
+SET LongDayNames='segunda-feira;terça-feira;quarta-feira;quinta-feira;sexta-feira;sábado;domingo';
+SET NumericalAbbreviation='3:k;6:M;9:G;12:T;15:P;18:E;21:Z;24:Y;-3:m;-6:μ;-9:n;-12:p;-15:f;-18:a;-21:z;-24:y';
+
+ft_EmpresaCalc_aux:
+
+LOAD
+    AutoNumberHash256(cd_cnpj,
+	'ID_EMPRESA')as id_empresa,
+    
+    AutoNumberHash256(de_saude_tributaria, 'ID_SAUDE_TRIBUTARIA') as id_saude_tributaria,
+    AutoNumberHash256(de_nivel_atividade, 'ID_NIVEL_ATIVIDADE') as id_nivel_atividade,
+    
+    cd_cnpj,
+    vl_total_veiculos_antt,
+    vl_total_veiculos_leves,
+    vl_total_veiculos_pesados,
+    fl_optante_simples,
+    qt_filial,
+    fl_optante_simei,
+    de_saude_tributaria,
+    de_nivel_atividade
+FROM [lib://dataMirrors/empresasCalc.QVD]
+(qvd);
+
+dim_nivel_atividade:
+Load Distinct
+	id_nivel_atividade,
+    de_nivel_atividade
+      
+Resident ft_EmpresaCalc_aux
+where IsNull(id_nivel_atividade)=False();
+Store dim_nivel_atividade into [lib://storage_pbi/dim_nivel_atividade.CSV] (txt, delimiter is ';');
+Store dim_nivel_atividade into [lib://storage_pbi/dim_nivel_atividade.QVD];
+
+dim_saude_tributaria:
+Load Distinct
+	id_saude_tributaria,
+    de_saude_tributaria
+      
+Resident ft_EmpresaCalc_aux
+where IsNull(id_saude_tributaria)=False();
+Store dim_saude_tributaria into [lib://storage_pbi/dim_saude_tributaria.CSV] (txt, delimiter is ';');
+Store dim_saude_tributaria into [lib://storage_pbi/dim_saude_tributaria.QVD];
+
+
+
+ft_EmpresaCalc:
+Load
+	id_empresa,
+    id_nivel_atividade,
+    id_saude_tributaria,
+    vl_total_veiculos_antt,
+    vl_total_veiculos_leves,
+    vl_total_veiculos_pesados,
+    fl_optante_simples,
+    qt_filial,
+    fl_optante_simei
+	
+Resident ft_EmpresaCalc_aux
+where IsNull(id_empresa)=False();
+
+Store ft_EmpresaCalc into [lib://storage_pbi/ft_EmpresaCalc.CSV] (txt, delimiter is ';');  
+Store ft_EmpresaCalc into [lib://storage_pbi/ft_EmpresaCalc.QVD];
+
+Drop Table ft_EmpresaCalc_aux;
+
+
+
+
+
+//---------------------------------------------------------------------------
+Latitude:
+Mapping
+LOAD
+	cd_cnpj,
+	
+    vl_latitude
+  
+FROM [lib://dataMirrors/empresasCalc.QVD]
+(qvd);
+
+Longitude:
+Mapping
+LOAD
+	cd_cnpj,
+	
+    vl_longitude
+  
+FROM [lib://dataMirrors/empresasCalc.QVD]
+(qvd);
+
+dim_EMPRESA_aux:
+LOAD
+	AutoNumberHash256(cd_cnpj,
+	'ID_EMPRESA')as id_empresa,
+   
+   	AutoNumberHash256(
+	cd_natureza_juridica&
+    de_natureza_juridica&
+    de_classif_natureza_juridica,
+	'ID_NATUREZA_JURIDICA'
+	)as id_natureza_juridica,
+    
+    AutoNumberHash256(
+    nm_logradouro&
+    nu_logradouro&
+    cd_cep&
+    nm_bairro&
+    nm_municipio&
+    sg_uf,
+    //vl_latitude&
+    //vl_longitude,
+    'ID_ENDERECO'
+	)as id_endereco,
+    
+    cd_cnpj,
+    fl_matriz,
+    dt_abertura,
+    nm_razao_social,
+    cd_natureza_juridica,
+    de_natureza_juridica,
+    nm_logradouro,
+    nu_logradouro,
+    cd_cep,
+    nm_bairro,
+    nm_municipio,
+    sg_uf,
+    de_situacao,
+    ApplyMap('Latitude', cd_cnpj, 'NÃO ENCONTRADO')as vl_latitude,
+    ApplyMap('Longitude', cd_cnpj, 'NÃO ENCONTRADO')as vl_longitude,
+    
+    de_classif_natureza_juridica
+FROM [lib://dataMirrors/Empresa.QVD]
+(qvd);
+
+
+
+
+
+dim_nat_juridica:
+Load Distinct
+	id_natureza_juridica,
+    cd_natureza_juridica,
+    de_natureza_juridica,
+    de_classif_natureza_juridica
+    
+Resident dim_EMPRESA_aux
+where IsNull(id_natureza_juridica)=False();
+Store dim_nat_juridica into [lib://storage_pbi/dim_nat_juridica.CSV] (txt, delimiter is ';');
+Store dim_nat_juridica into [lib://storage_pbi/dim_nat_juridica.QVD];
+
+
+dim_Endereco:
+Load Distinct
+    
+	id_endereco,
+    nm_logradouro,
+    nu_logradouro,
+    cd_cep,
+    nm_bairro,
+    nm_municipio,
+    sg_uf,
+    vl_latitude,
+    vl_longitude
+Resident dim_EMPRESA_aux
+where IsNull(id_endereco)=False();
+
+Store dim_Endereco into [lib://storage_pbi/dim_Endereco.CSV] (txt, delimiter is ';');
+Store dim_Endereco into [lib://storage_pbi/dim_Endereco.QVD];
+
+
+dim_EMPRESA:
+Load
+	id_empresa,
+	id_natureza_juridica,
+	id_endereco,
+	cd_cnpj,
+    fl_matriz,
+    dt_abertura,
+    nm_razao_social,
+    de_situacao
+Resident dim_EMPRESA_aux
+where IsNull(id_empresa)=False();
+
+Store dim_EMPRESA into [lib://storage_pbi/dim_EMPRESA.CSV] (txt, delimiter is ';');  
+Store dim_EMPRESA into [lib://storage_pbi/dim_EMPRESA.QVD];
+
+Drop Table dim_EMPRESA_aux;
+
+
+
+
+
+//-----------------------------------------------------------------------------------------------------------
+cod_ramo_atvd:
+Mapping
+LOAD
+	AutoNumberHash256(
+	cod_ramo_atividade&
+    desc_ramo_atividade,
+    'ID_RAMO_ATIVIDADE'
+	)as id_ramo_atividade,
+	
+    cod_ramo_atividade
+  
+FROM [lib://dataTransformed/CNAE_c.QVD]
+(qvd);
+
+desc_ramo_atvd:
+Mapping
+LOAD
+	AutoNumberHash256(
+	cod_ramo_atividade&
+    desc_ramo_atividade,
+    'ID_RAMO_ATIVIDADE'
+	)as id_ramo_atividade,
+	
+    desc_ramo_atividade
+  
+FROM [lib://dataTransformed/CNAE_c.QVD]
+(qvd);
+
+dim_Empresa_CNAE:
+LOAD
+    AutoNumberHash256(cd_cnpj,
+	'ID_EMPRESA')as id_empresa,
+    AutoNumberHash256(
+	cod_ramo_atividade&
+    desc_ramo_atividade,
+    'ID_RAMO_ATIVIDADE'
+	)as id_ramo_atividade,
+    //cd_cnpj,
+    ordem
+    //cod_ramo_atividade,
+    //desc_ramo_atividade
+FROM [lib://dataTransformed/CNAE_c.QVD]
+(qvd);
+Store dim_Empresa_CNAE into [lib://storage_pbi/dim_Empresa_CNAE.CSV] (txt, delimiter is ';');
+Store dim_Empresa_CNAE into [lib://storage_pbi/dim_Empresa_CNAE.QVD] ;
+
+dim_CNAE:
+LOAD DISTINCT
+	id_ramo_atividade,
+	Left(ApplyMap('cod_ramo_atvd', id_ramo_atividade),2) as cod_divisao,
+    ApplyMap('cod_ramo_atvd', id_ramo_atividade)as cod_ramo_atividade,
+    ApplyMap('desc_ramo_atvd', id_ramo_atividade)as desc_ramo_atividade
+    
+Resident dim_Empresa_CNAE
+WHERE IsNull(id_ramo_atividade)=False();
+
+Store dim_CNAE into [lib://storage_pbi/dim_CNAE.CSV] (txt, delimiter is ';');
+Store dim_CNAE into [lib://storage_pbi/dim_CNAE.QVD] ;
+
+
+
+dim_Divisao:
+LOAD
+	Left("(DIVISÃO - 2digitos CNAE)", 2) as cod_divisao,
+    "Ramo de Atividade" as setor,
+    Divisões as divisoes
+FROM [lib://dataMirrors/Setores_e_Ramos_de_Atividade.qvd]
+(qvd);
+
+Store dim_Divisao into [lib://storage_pbi/dim_Divisao.CSV] (txt, delimiter is ';');
+Store dim_Divisao into [lib://storage_pbi/dim_Divisao.QVD] ;
+
+
+
+
+
+
+
+
+
+
+    
+
+
+
+
+
+
+
+
+
+
+

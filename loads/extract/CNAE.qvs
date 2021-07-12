@@ -1,0 +1,7 @@
+LOAD
+    cd_cnpj,
+    nu_ordem,
+    cd_ramo_atividade,
+    de_ramo_atividade
+FROM [lib://BASE_CSV/CNAE.csv]
+(txt, utf8, embedded labels, delimiter is ';', msq);
